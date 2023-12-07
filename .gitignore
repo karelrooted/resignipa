@@ -1,0 +1,13 @@
+/resignipa/build
+_floatsignTemp
+.DS_Store
+/.build
+/Packages
+xcuserdata/
+DerivedData/
+.netrc
+/build
+/.swiftpm
+/.vscode
+/Framework
+/resignipa/xcuserdata/
