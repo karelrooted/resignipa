@@ -120,6 +120,9 @@ else
         export profile_dir
         provisioning_profile=$(ls "$profile_dir" | grep mobileprovision | xargs -I {} bash -c 'printf {}" " && GetProfileName \"${profile_dir}/{}\"' | grep "$provisioning_profile$" | awk '{print $1}')
         provisioning_profile="$profile_dir/$provisioning_profile"
+        if [[ ! -z $bundleID ]]; then
+            cd resignipa && xcodebuild -target resignipa PRODUCT_BUNDLE_IDENTIFIER=$bundleID -allowProvisioningUpdates 2>/dev/null | grep --fixed-strings --after-context=2 'Signing Identity:' && cd -
+        fi
         if [ ! -f "$provisioning_profile" ]; then
             echo "Profile does not exist. Please try again."
             exit 1
@@ -170,9 +173,6 @@ if [[ $? != 0 ]]; then
 fi
 brew list fastlane || brew install fastlane || (echo "Please install fastlane and then retry: brew install fastlane." && exit 1)
 brew list yq || brew install yq || (echo "Please install yq and then retry: brew install yq." && exit 1)
-if [[ ! -z $bundleID ]]; then
-    cd resignipa && xcodebuild -target resignipa PRODUCT_BUNDLE_IDENTIFIER=$bundleID -allowProvisioningUpdates 2>/dev/null | grep --fixed-strings --after-context=2 'Signing Identity:' && cd -
-fi
 fastlane_cmd="fastlane sigh resign \"$resigned_ipa\" "
 if [[ ! -z $signing_identity ]]; then
     fastlane_cmd="$fastlane_cmd --signing_identity \"$signing_identity\" "
