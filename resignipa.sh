@@ -83,7 +83,16 @@ function cleanup {
 # register the cleanup function to be called on the EXIT signal
 trap cleanup EXIT
 
-xcode_profile_dir="$HOME/Library/MobileDevice/Provisioning Profiles"
+which -s brew
+if [[ $? != 0 ]]; then
+    # Install Homebrew
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
+brew update
+brew list fastlane || brew install fastlane || (echo "Please install fastlane and then retry: brew install fastlane." && exit 1)
+brew list yq || brew install yq || (echo "Please install yq and then retry: brew install yq." && exit 1)
+
+xcode_profile_dir="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
 if [[ -z $provisioning_profile ]]; then
     profiles=$(ls | grep mobileprovision)
     if [ -z "$profiles" ]; then
@@ -160,19 +169,6 @@ if [[ $? != 0 ]]; then
     echo "Error: failed to copy ipa file to temp directory. Please check file exist and permission."
     exit 1
 fi
-cfgutil="/Applications/Apple Configurator.app/Contents/MacOS/cfgutil"
-if [ ! -f "$cfgutil" ]; then
-    echo "cfgutil does not exist."
-    echo "Please install Apple Configurator from the Mac App Store."
-    exit 1
-fi
-which -s brew
-if [[ $? != 0 ]]; then
-    # Install Homebrew
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-fi
-brew list fastlane || brew install fastlane || (echo "Please install fastlane and then retry: brew install fastlane." && exit 1)
-brew list yq || brew install yq || (echo "Please install yq and then retry: brew install yq." && exit 1)
 fastlane_cmd="fastlane sigh resign \"$resigned_ipa\" "
 if [[ ! -z $signing_identity ]]; then
     fastlane_cmd="$fastlane_cmd --signing_identity \"$signing_identity\" "
@@ -182,8 +178,14 @@ eval "$fastlane_cmd"
 if [[ $? != 0 ]]; then
     exit 1
 fi
+cfgutil="/Applications/Apple Configurator.app/Contents/MacOS/cfgutil"
+if [ ! -f "$cfgutil" ]; then
+    echo "cfgutil does not exist."
+    echo "Please install Apple Configurator from the Mac App Store."
+    exit 1
+fi
 if [[ -z $device ]]; then
-    device_list=$("$cfgutil" list | awk '{print $NF}')
+    device_list=$("$cfgutil" list | awk -F ': ' '{print $NF}')
     if [ -z "$device_list" ]; then
         echo "Device list empty. Please pair your device in Apple Configurator and try again."
         exit 1
